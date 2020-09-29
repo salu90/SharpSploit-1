@@ -251,7 +251,9 @@ namespace SharpSploit.Execution.Injection
 	
 	public class LocalDelegateCreate : ExecutionTechnique
     {
-    
+        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+        private delegate Int32 Initialize();
+
         /// <summary>
         /// Default constructor.
         /// </summary>
@@ -260,7 +262,6 @@ namespace SharpSploit.Execution.Injection
             DefineSupportedPayloadTypes();
         }
 
-    
         /// <summary>
         /// States whether the payload is supported.
         /// </summary> 
@@ -283,28 +284,19 @@ namespace SharpSploit.Execution.Injection
             };
         }
 
+        /// <summary>
+        /// Inject a payload into the current process using a specified allocation.
+        /// </summary>
+        /// <param name="Payload"></param>
+        /// <param name="AllocationTechnique"></param>
+        /// <param name="Process"></param>
+        /// <returns></returns>
         public bool Inject(PICPayload Payload, AllocationTechnique AllocationTechnique, Process Process)
         {
             IntPtr baseAddr = AllocationTechnique.Allocate(Payload, Process);
-            return Inject(Payload, baseAddr, Process);
-        }
-
-        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-        private delegate Int32 Initialize();
-
-        /// <summary>
-        /// Create a thread in the remote process.
-        /// </summary>
-        /// <param name="Payload">The shellcode payload to execute in the target process.</param>
-        /// <param name="BaseAddress">The address of the shellcode in the target process.</param>
-        /// <param name="Process">The target process to inject into.</param>
-        /// <returns></returns>        
-        public bool Inject(PICPayload Payload, IntPtr BaseAddress, Process Process)
-        {
-            Initialize del = (Initialize)Marshal.GetDelegateForFunctionPointer(BaseAddress, typeof(Initialize));
-			del();
+            Initialize del = (Initialize)Marshal.GetDelegateForFunctionPointer(baseAddr, typeof(Initialize));
+            del();
             return true;
         }
     }
-	
 }
